@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: A boilerplate template for X-Ray integration.
+
+Globals:
+  Function:
+    Runtime: python3.7
+    MemorySize: 1024
+    Tracing: Active
+  Api:
+    TracingEnabled: true
+
+Resources:
+  # Put your resources here
+
+Outputs:
+  ApiUrl:
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"

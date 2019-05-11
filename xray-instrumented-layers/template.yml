@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: A simple stack to showcase X-Ray integration.
+
+Globals:
+  Function:
+    Runtime: python3.7
+    MemorySize: 1024
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref Table
+    Tracing: Active
+    Layers:
+      - !Ref XRayLayer
+  Api:
+    TracingEnabled: true
+
+Resources:
+  XRayLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ./layers/build/xray/
+      CompatibleRuntimes:
+        - python3.6
+        - python3.7
+
+  GetItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/
+      Handler: main.get_handler
+      Events:
+        Get:
+          Type: Api
+          Properties:
+            Path: /{name}
+            Method: GET
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref Table
+
+  PutItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/
+      Handler: main.put_handler
+      Events:
+        Get:
+          Type: Api
+          Properties:
+            Path: /{name}
+            Method: PUT
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Table
+
+  Table:
+    Type: AWS::Serverless::SimpleTable
+
+Outputs:
+  ApiUrl:
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+  TableName:
+    Value: !Ref Table

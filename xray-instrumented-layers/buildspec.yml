@@ -1,0 +1,19 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.7
+      docker: 18
+    commands:
+      - pip3 install aws-sam-cli
+  build:
+    commands:
+      - make build
+  post_build:
+    commands:
+      - make package
+
+artifacts:
+  files:
+    - template-output.yml

@@ -1,0 +1,157 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: A simple stack to showcase X-Ray integration.
+
+Globals:
+  Api:
+    TracingEnabled: true
+
+Resources:
+  ApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Table}"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - sts:AssumeRole
+
+  ServerlessRestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Ref AWS::StackName
+      StageName: Prod
+      DefinitionBody:
+        openapi: "3.0.0"
+        paths:
+          "/{name}":
+            get:
+              summary: Get an item by name
+              parameters:
+                - name: name
+                  in: path
+                  required: true
+                  type: string
+              responses:
+                "200":
+                  description: 200 status response
+                "400":
+                  description: 400 status response
+                "500":
+                  description: 500 status response
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: AWS
+                passthroughBehavior: NEVER
+                uri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:dynamodb:action/GetItem"
+                credentials: !GetAtt ApiRole.Arn
+                requestTemplates:
+                  application/json:
+                    Fn::Sub: >
+                      {
+                        "TableName": "${Table}",
+                        "Key": {
+                          "id": {
+                            "S": "$input.params('name')"
+                          }
+                        }
+                      }
+                responses:
+                  "4\\d{2}":
+                    statusCode: 400
+                    responseTemplates:
+                      application/json: >
+                        {
+                          "message": $input.json('$.message')
+                        }
+                  "5\\d{2}":
+                    statusCode: 500
+                    responseTemplates:
+                      application/json: >
+                        {
+                          "message": $input.json('$.message')
+                        }
+                  default:
+                    statusCode: 200
+                    responseTemplates:
+                      application/json: >
+                        $util.parseJson($input.json('$.Item.content.S'))
+            put:
+              summary: Put an item by name
+              parameters:
+                - name: name
+                  in: path
+                  required: true
+                  type: string
+              responses:
+                "200":
+                  description: 200 status response
+                "400":
+                  description: 400 status response
+                "500":
+                  description: 500 status response
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: AWS
+                passthroughBehavior: NEVER
+                uri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:dynamodb:action/PutItem"
+                credentials: !GetAtt ApiRole.Arn
+                requestTemplates:
+                  application/json:
+                    Fn::Sub: >
+                      {
+                        "TableName": "${Table}",
+                        "Item": {
+                          "id": {
+                            "S": "$input.params('name')"
+                          },
+                          "content": {
+                            "S": "$util.escapeJavaScript($input.body)"
+                          }
+                        }
+                      }
+                responses:
+                  "4\\d{2}":
+                    statusCode: 400
+                    responseTemplates:
+                      application/json: >
+                        {
+                          "message": $input.json('$.message')
+                        }
+                  "5\\d{2}":
+                    statusCode: 500
+                    responseTemplates:
+                      application/json: >
+                        {
+                          "message": $input.json('$.message')
+                        }
+                  default:
+                    statusCode: 200
+                    responseTemplates:
+                      application/json: >
+                        {
+                          "message": "Success"
+                        }
+
+  Table:
+    Type: AWS::Serverless::SimpleTable
+
+Outputs:
+  ApiUrl:
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+  TableName:
+    Value: !Ref Table

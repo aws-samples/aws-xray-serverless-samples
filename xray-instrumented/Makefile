@@ -4,15 +4,8 @@ STACK_NAME ?= sample-xray-instrumented-$(ENVIRONMENT)
 all: build package deploy
 
 # Build
-CODEBUILD_START_TIME ?= "FALSE"
-ifeq ($(CODEBUILD_START_TIME),"FALSE")
-	BUILD_ARGS=--use-container
-else
-	BUILD_ARGS=
-endif
-
 build:
-	sam build $(BUILD_ARGS)
+	sam build --use-container
 
 # Package
 package:

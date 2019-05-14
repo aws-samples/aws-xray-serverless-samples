@@ -4,20 +4,7 @@ STACK_NAME ?= sample-xray-instrumented-layers-$(ENVIRONMENT)
 all: build package deploy
 
 # Build
-CODEBUILD_START_TIME ?= "FALSE"
-ifeq ($(CODEBUILD_START_TIME),"FALSE")
-	BUILD_MODE=build-local
-else
-	BUILD_MODE=build-codebuild
-endif
-
-build: $(BUILD_MODE)
-
-build-codebuild:
-	mkdir -p ./layers/build/xray/python/
-	$(MAKE) -C layers
-
-build-local:
+build:
 	mkdir -p ./layers/build/xray/python/
 	docker run -v $(PWD)/layers:/var/task lambci/lambda:build-python3.7 make
 

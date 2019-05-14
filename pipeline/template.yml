@@ -108,6 +108,7 @@ Resources:
             Value: !Ref ArtifactStore
         Type: LINUX_CONTAINER
         Image: !Ref CodeBuildImage
+        PrivilegedMode: true
       ServiceRole: !Ref CodeBuildRole
       Source:
         Type: codepipeline

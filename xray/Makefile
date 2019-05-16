@@ -21,7 +21,7 @@ calls:
 
 # Local
 local:
-	$(eval TABLE_NAME=$(shell aws cloudformation describe-stacks --stack-name $(STACK_NAME) --query 'Stacks[0].Outputs[?OutputKey==`TableName`].OutputValue' --output text))
+	$(eval TABLE_NAME=$(shell aws cloudformation describe-stack-resources --stack-name $(STACK_NAME) --query 'StackResources[?LogicalResourceId==`Table`].PhysicalResourceId' --output text))
 	python3 ../helpers/gen_env.py TABLE_NAME=$(TABLE_NAME) > env.json
 	@echo "Environment variables:"
 	@cat env.json
